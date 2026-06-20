@@ -83,6 +83,21 @@ def turnover(weights: pd.DataFrame) -> float:
     return float(0.5 * changes.iloc[1:].mean())
 
 
+def capacity(weights: pd.DataFrame, dollar_adv: pd.Series, participation: float = 0.01) -> float:
+    """Rough AUM capacity (USD) before trades exceed `participation` of ADV.
+
+    At each rebalance the strategy must trade |dw_i| * AUM dollars in name i,
+    which we cap at `participation` of that name's average daily dollar volume.
+    The binding name sets capacity = min_i (participation * adv_i / max|dw_i|).
+    """
+    changes = weights.diff().abs()
+    changes.iloc[0] = weights.iloc[0].abs()
+    max_trade = changes.max(axis=0)
+    max_trade = max_trade[max_trade > 0]
+    adv = dollar_adv.reindex(max_trade.index)
+    return float((participation * adv / max_trade).min())
+
+
 def summarize(
     returns: pd.Series, rf: float = 0.0, periods_per_year: int = TRADING_DAYS
 ) -> dict[str, float]:

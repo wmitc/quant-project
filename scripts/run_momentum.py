@@ -14,9 +14,10 @@ from pathlib import Path
 
 import pandas as pd
 
+from quantbt import metrics
 from quantbt.backtest import daily_returns, simulate
 from quantbt.costs import CostModel
-from quantbt.data import load_prices
+from quantbt.data import load_dollar_adv, load_prices
 from quantbt.plotting import save_tearsheet
 from quantbt.strategies.momentum import momentum_weights, month_end_rebalances
 
@@ -62,10 +63,16 @@ def main():
     print("\nCost-sensitivity sweep:")
     print(sweep.round(3).to_string())
 
+    # Capacity: AUM at which trades would hit 1% of a name's dollar volume.
+    adv = load_dollar_adv(UNIVERSE, START, END, "data/momentum_dollar_adv.csv")
+    cap = metrics.capacity(weights, adv, participation=0.01)
+    print(f"\nCapacity (1% ADV participation): ${cap / 1e6:,.0f}M")
+
     # Persist results for the README.
     Path(RESULTS).mkdir(exist_ok=True)
     summary.round(4).to_csv(f"{RESULTS}/momentum_metrics.csv", header=["value"])
     sweep.round(4).to_csv(f"{RESULTS}/momentum_cost_sweep.csv")
+    pd.Series({"capacity_usd": cap}).to_csv(f"{RESULTS}/momentum_capacity.csv", header=["value"])
     save_tearsheet(result, f"{RESULTS}/momentum_tearsheet.png")
     print(f"\nsaved metrics + tearsheet to {RESULTS}/")
 
