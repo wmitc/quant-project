@@ -55,3 +55,27 @@ def load_prices(
     cache_file.parent.mkdir(parents=True, exist_ok=True)
     prices.to_csv(cache_file)
     return prices
+
+
+def load_dollar_adv(
+    tickers: list[str],
+    start: str,
+    end: str,
+    cache_file: str | Path,
+    force: bool = False,
+) -> pd.Series:
+    """Average daily dollar volume (close * volume) per ticker, cached to CSV.
+
+    Used to estimate strategy capacity. Like `load_prices`, it reads the cache
+    if present, otherwise downloads and saves it.
+    """
+    cache_file = Path(cache_file)
+    if cache_file.exists() and not force:
+        return pd.read_csv(cache_file, index_col=0).squeeze("columns")
+
+    raw = yf.download(tickers, start=start, end=end, auto_adjust=True, progress=False)
+    adv = (raw["Close"] * raw["Volume"]).mean()
+    adv.name = "dollar_adv"
+    cache_file.parent.mkdir(parents=True, exist_ok=True)
+    adv.to_csv(cache_file)
+    return adv

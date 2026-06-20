@@ -43,3 +43,11 @@ def test_turnover_half_book():
     # rebalance from 50/50 to 0/100: |delta| = 0.5 + 0.5 = 1.0, *0.5 = 0.5
     w = pd.DataFrame([[0.5, 0.5], [0.0, 1.0]], columns=["A", "B"])
     assert metrics.turnover(w) == pytest.approx(0.5)
+
+
+def test_capacity_binding_name():
+    # max |dw| is 0.5 for both names; A has the smaller ADV so it binds
+    w = pd.DataFrame([[0.5, 0.5], [0.0, 0.5]], columns=["A", "B"])
+    adv = pd.Series({"A": 1e8, "B": 1e9})
+    # A: 0.01 * 1e8 / 0.5 = 2e6 ; B: 0.01 * 1e9 / 0.5 = 2e7 -> min = 2e6
+    assert metrics.capacity(w, adv, participation=0.01) == pytest.approx(2e6)
