@@ -10,7 +10,6 @@
   dependencies = [
       "numpy",
       "pandas",
-      "pyarrow",
       "scipy",
       "statsmodels",
       "yfinance",
