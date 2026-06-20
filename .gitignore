@@ -1,11 +1,14 @@
+# Unwanted ython and virtual environment files
 __pycache__/
-  *.py[cod]
-  .venv/
-  venv/
-  .pytest_cache/
-  .ipynb_checkpoints/
-  .DS_Store
+*.py[cod]
+.venv/
+venv/.pytest_cache/
+.ipynb_checkpoints/
+.DS_Store
 
-  # Cached raw data is regenerable; don't commit the big stuff
-  data/*.parquet
-  data/*.csv
+# Cached raw data is regenerable; don't commit the big stuff
+data/*.parquet
+data/*.csv
+
+# Kepp build artifacts out of git repo
+*.egg-info/
