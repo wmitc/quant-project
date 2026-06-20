@@ -31,6 +31,9 @@ python scripts/run_pairs.py    # pairs / stat-arb backtest + plots
 Price data is cached as CSV under `data/` and committed, so the scripts run
 offline and reproduce the committed results in `results/`.
 
+For a narrative walkthrough of each strategy (signal → weights → after-cost
+backtest, with inline plots), see the notebooks in `notebooks/`.
+
 ## Methodology
 
 - **No look-ahead.** Positions decided at a day's close earn the *next* day's
@@ -142,6 +145,7 @@ once you pay to cross it.
 ```
 src/quantbt/      data, metrics, costs, backtest engine, plotting, strategies/
 scripts/          run_momentum.py, run_pairs.py
+notebooks/        narrative walkthroughs (momentum, pairs)
 tests/            27 unit tests (metrics, costs, engine, strategies)
 data/             committed price/volume CSVs
 results/          committed metrics tables and tearsheets
