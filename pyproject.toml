@@ -17,7 +17,7 @@
   ]
 
   [project.optional-dependencies]
-  dev = ["pytest", "ruff"]
+  dev = ["pytest", "ruff", "jupyter", "nbconvert", "nbformat", "ipykernel"]
 
   [tool.setuptools.packages.find]
   where = ["src"]
