@@ -1,0 +1,4 @@
+,ann_return,ann_vol,sharpe,sortino,max_drawdown,hit_rate
+buy_hold,0.1034,0.1904,0.612,0.8611,-0.5519,0.5506
+intraday,0.0203,0.1463,0.2108,0.2903,-0.4667,0.5374
+overnight,0.0808,0.114,0.739,1.0129,-0.2941,0.5542
