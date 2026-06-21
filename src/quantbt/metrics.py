@@ -110,3 +110,24 @@ def summarize(
         "max_drawdown": max_drawdown(returns),
         "hit_rate": hit_rate(returns),
     }
+
+
+def tail_stats(returns: pd.Series, levels=(0.95, 0.99)) -> dict[str, float]:
+    """Tail-risk descriptors: skew, excess kurtosis, worst day, and historical
+    VaR and CVaR (expected shortfall) at the given confidence levels.
+
+    VaR is the left-tail quantile of returns (negative); CVaR is the average
+    return in that tail, so cvar <= var <= 0. These matter most for short-vol
+    strategies, where Sharpe alone hides a fat left tail.
+    """
+    r = returns.dropna()
+    out = {
+        "skew": float(r.skew()),
+        "excess_kurtosis": float(r.kurt()),
+        "worst_day": float(r.min()),
+    }
+    for level in levels:
+        var = r.quantile(1.0 - level)
+        out[f"var_{int(level * 100)}"] = float(var)
+        out[f"cvar_{int(level * 100)}"] = float(r[r <= var].mean())
+    return out
