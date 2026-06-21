@@ -1,15 +1,17 @@
-# quantbt — a walk-forward backtester with three strategies
+# quantbt — a walk-forward backtester with four strategies
 
 A small, reproducible backtesting framework for systematic strategies, built to
 measure performance the way a trading desk would: **walk-forward, after costs,
 with turnover, capacity, and tail risk** — not just a pretty gross equity curve.
 
-The reusable engine is the point; three strategies — cross-sectional momentum,
-ETF pairs / statistical arbitrage, and a delta-hedged short-volatility straddle —
-are plug-ins that exercise it. The honest findings differ by design: the two
-equity strategies deliver thin edge after costs, while the delta-hedged short
-straddle earns a genuine **variance risk premium** (Sharpe ~1.4–1.6 after costs)
-in exchange for a fat left tail. The framework makes all of that visible.
+The reusable engine is the point; four strategies — cross-sectional momentum,
+ETF pairs / statistical arbitrage, the overnight effect, and a delta-hedged
+short-volatility straddle — are plug-ins that exercise it. The honest findings
+differ by design: momentum and pairs deliver thin edge after costs; the overnight
+effect is a simple, well-documented anomaly with a strong risk profile; and the
+delta-hedged short straddle earns a genuine **variance risk premium** (Sharpe
+~1.4–1.6 after costs) in exchange for a fat left tail. The framework makes all of
+that visible.
 
 ## Why
 
@@ -25,9 +27,10 @@ strategies through it and report whatever I found, good or bad.
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 
-pytest -q                      # 41 unit tests
+pytest -q                      # 44 unit tests
 python scripts/run_momentum.py # momentum backtest + plots
 python scripts/run_pairs.py    # pairs / stat-arb backtest + plots
+python scripts/run_overnight.py # overnight-effect backtest + plots
 python scripts/run_straddle.py # short-vol straddle backtest + plots
 ```
 
@@ -123,7 +126,40 @@ low-return hedged portfolio — thin edge after costs. SPY/IVV is a nice caution
 case: nearly identical trackers whose spread is too tight to trade profitably
 once you pay to cross it.
 
-### 3. Volatility: delta-hedged short straddle
+### 3. Overnight effect
+
+Buy SPY at the close, sell at the next open, 2005–2024 — holding only the
+overnight move and flat during the day. Historically almost all of the index's
+return has accrued overnight while the regular session is roughly flat, so this
+one-sentence anomaly captures most of the return with much less risk.
+
+Return decomposition (gross):
+
+| Period | Ann. return | Sharpe | Vol | Max DD |
+|---|---|---|---|---|
+| Buy & hold | 10.3% | 0.61 | 19.0% | −55.2% |
+| Intraday (open→close) | 2.0% | 0.21 | 14.6% | −46.7% |
+| Overnight (close→open) | 8.1% | 0.74 | 11.4% | −29.4% |
+
+Overnight strategy, cost-sensitivity sweep (one round-trip/day):
+
+| Cost | Ann. return | Sharpe | Max DD |
+|---|---|---|---|
+| 0 bp | 8.1% | 0.74 | −29.4% |
+| 0.5 bp | 6.7% | 0.63 | −29.5% |
+| 1 bp | 5.4% | 0.52 | −29.6% |
+| 2 bp | 2.8% | 0.30 | −29.8% |
+
+![Overnight tearsheet](results/overnight_tearsheet.png)
+
+**Read:** the overnight window earns ~75% of buy-and-hold's return with ~60% of
+the volatility and half the drawdown, while the intraday session is nearly
+uncompensated risk. It's not a high Sharpe — net of a realistic (sub-1bp) SPY
+round-trip it's roughly buy-and-hold's, but with far smaller drawdowns. The point
+is the clean, well-documented decomposition, not a headline number. Caveats: you
+bear overnight gap risk and can't trade exactly at the official close/open prints.
+
+### 4. Volatility: delta-hedged short straddle
 
 Sell a rolling 1-month at-the-money SPX straddle priced off VIX (the implied vol)
 and **delta-hedge it daily** against the index, 2010–2024. This harvests the
@@ -175,11 +211,14 @@ spread, not a real historical option chain.
 - **Pairs.** Cointegration that holds in-sample often weakens out-of-sample;
   gating on it is what separates a real relationship from a spurious one. In
   liquid ETFs most of the relative-value edge appears arbitraged away.
-- **Short volatility.** The only genuine premium of the three — because it is
+- **Overnight effect.** A simple, robust microstructure regularity: the index's
+  drift is overwhelmingly an overnight phenomenon. Low-turnover and easy to
+  explain, with a better risk profile than buy-and-hold — though not a high Sharpe.
+- **Short volatility.** The one genuine *premium* of the four — because it is
   *compensation for tail risk*, not a crowded anomaly. The delta-hedge isolates
   the variance premium; the steep negative skew and kurtosis are the price of the
   Sharpe, and reporting them honestly matters more than the Sharpe itself.
-- **All three.** The value isn't a magic number — it's that the measurement is
+- **All four.** The value isn't a magic number — it's that the measurement is
   honest: net of costs, free of look-ahead, sized against capacity, and explicit
   about the tail.
 
@@ -194,14 +233,16 @@ spread, not a real historical option chain.
 - The short-vol straddle prices options synthetically off VIX (no historical
   option chain), so its headline overstates a live implementation that pays the
   real option bid-ask.
+- The overnight strategy bears gap risk and assumes execution at the official
+  close/open prints, which isn't achievable exactly.
 
 ## Layout
 
 ```
 src/quantbt/      data, metrics, costs, backtest engine, plotting, blackscholes, strategies/
-scripts/          run_momentum.py, run_pairs.py, run_straddle.py
-notebooks/        narrative walkthroughs (momentum, pairs, short-vol)
-tests/            41 unit tests (metrics, costs, engine, strategies, black-scholes)
+scripts/          run_momentum.py, run_pairs.py, run_overnight.py, run_straddle.py
+notebooks/        narrative walkthroughs (momentum, pairs, overnight, short-vol)
+tests/            44 unit tests (metrics, costs, engine, strategies, black-scholes)
 data/             committed price/volume CSVs
 results/          committed metrics tables and tearsheets
 ```
