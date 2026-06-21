@@ -10,20 +10,22 @@ short-volatility straddle — are plug-ins that exercise it. The honest findings
 differ by design: momentum and pairs deliver thin edge after costs; the overnight
 effect is a simple, well-documented anomaly with a strong risk profile; and the
 delta-hedged short straddle earns a genuine **variance risk premium** (Sharpe
-~1.4–1.6 after costs) in exchange for a fat left tail. The framework makes all of
-that visible.
+1.62 after costs, at a 1 vol-point option spread) in exchange for a fat left tail.
+The framework makes all of that visible.
 
 ## Results at a glance
 
-All figures are **after costs**. Methodology, cost-sensitivity sweeps, tail
-stats, and plots for each are in the [Results](#results) section below.
+All figures are **after costs**. The short-straddle Sharpe assumes a 1 vol-point
+option spread (it is 1.35 even at a conservative 2 vol-points — see its cost
+sweep). Methodology, cost-sensitivity sweeps, tail stats, and plots for each are
+in the [Results](#results) section below.
 
 | Strategy | Sharpe | Max DD | In a sentence |
 |---|---|---|---|
 | Cross-sectional momentum | 0.10 | −33% | Thin edge after costs in large-cap momentum |
 | ETF pairs (stat-arb) | 0.18 | −3.3% | Most candidate pairs aren't cointegrated out-of-sample |
 | Overnight effect (SPY) | ~0.5 | −29% | The index's drift is overwhelmingly an overnight phenomenon |
-| Delta-hedged short straddle | **1.4–1.6** | −13.5% | A real variance risk premium — paid for bearing a fat tail |
+| Delta-hedged short straddle | **1.62** | −13.5% | A real variance risk premium — paid for bearing a fat tail |
 
 ## Why
 
@@ -207,7 +209,8 @@ Tail risk — the catch, and the reason the premium exists:
 ![P&L decomposition](results/straddle_pnl_decomp.png)
 
 **Read:** this is the one strategy that earns a real, durable premium — Sharpe
-~1.4–1.6 after costs, robust to the assumed spread. But the Sharpe flatters it:
+1.62 after costs (1.35 even at a conservative 2 vol-point spread), so robust to
+the cost assumption. But the Sharpe flatters it:
 returns are strongly left-skewed (−4.6) with enormous kurtosis, because you are
 **selling insurance**. The −13.5% drawdown clusters in Feb 2018 and March 2020 —
 the delta-hedge contains direction, but not the gamma losses on big moves. The
