@@ -1,13 +1,15 @@
-# quantbt — a walk-forward backtester with two strategies
+# quantbt — a walk-forward backtester with three strategies
 
-A small, reproducible backtesting framework for systematic equity strategies,
-built to measure performance the way a trading desk would: **walk-forward, after
-costs, with turnover and capacity** — not just a pretty gross equity curve.
+A small, reproducible backtesting framework for systematic strategies, built to
+measure performance the way a trading desk would: **walk-forward, after costs,
+with turnover, capacity, and tail risk** — not just a pretty gross equity curve.
 
-The reusable engine is the point; the two strategies (cross-sectional momentum
-and ETF pairs / statistical arbitrage) are plug-ins that exercise it. The honest
-finding is as interesting as the numbers: naive versions of both effects deliver
-thin edge after realistic costs, and the framework makes that visible.
+The reusable engine is the point; three strategies — cross-sectional momentum,
+ETF pairs / statistical arbitrage, and a delta-hedged short-volatility straddle —
+are plug-ins that exercise it. The honest findings differ by design: the two
+equity strategies deliver thin edge after costs, while the delta-hedged short
+straddle earns a genuine **variance risk premium** (Sharpe ~1.4–1.6 after costs)
+in exchange for a fat left tail. The framework makes all of that visible.
 
 ## Why
 
@@ -23,9 +25,10 @@ strategies through it and report whatever I found, good or bad.
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 
-pytest -q                      # 27 unit tests
+pytest -q                      # 41 unit tests
 python scripts/run_momentum.py # momentum backtest + plots
 python scripts/run_pairs.py    # pairs / stat-arb backtest + plots
+python scripts/run_straddle.py # short-vol straddle backtest + plots
 ```
 
 Price data is cached as CSV under `data/` and committed, so the scripts run
@@ -120,6 +123,50 @@ low-return hedged portfolio — thin edge after costs. SPY/IVV is a nice caution
 case: nearly identical trackers whose spread is too tight to trade profitably
 once you pay to cross it.
 
+### 3. Volatility: delta-hedged short straddle
+
+Sell a rolling 1-month at-the-money SPX straddle priced off VIX (the implied vol)
+and **delta-hedge it daily** against the index, 2010–2024. This harvests the
+**variance risk premium** — implied vol systematically exceeds realized because
+investors overpay for crash insurance — with market direction hedged out.
+
+| Metric | After costs (1 vol-pt spread) |
+|---|---|
+| Annualized return | 8.8% |
+| Annualized vol | 5.3% |
+| Sharpe | 1.62 |
+| Sortino | 1.96 |
+| Max drawdown | −13.5% |
+| Hit rate | 70.1% |
+
+Cost-sensitivity sweep (option bid-ask, in vol points) — the edge survives even a
+conservative spread:
+
+| Spread | Ann. return | Sharpe | Max DD |
+|---|---|---|---|
+| 0 | 10.3% | 1.89 | −13.3% |
+| 0.5 | 9.5% | 1.76 | −13.4% |
+| 1.0 | 8.8% | 1.62 | −13.5% |
+| 2.0 | 7.3% | 1.35 | −13.7% |
+
+Tail risk — the catch, and the reason the premium exists:
+
+| Skew | Excess kurtosis | Worst day | CVaR 95% | CVaR 99% |
+|---|---|---|---|---|
+| −4.6 | 55 | −5.6% | −0.9% | −2.0% |
+
+![Straddle tearsheet](results/straddle_tearsheet.png)
+![P&L decomposition](results/straddle_pnl_decomp.png)
+
+**Read:** this is the one strategy that earns a real, durable premium — Sharpe
+~1.4–1.6 after costs, robust to the assumed spread. But the Sharpe flatters it:
+returns are strongly left-skewed (−4.6) with enormous kurtosis, because you are
+**selling insurance**. The −13.5% drawdown clusters in Feb 2018 and March 2020 —
+the delta-hedge contains direction, but not the gamma losses on big moves. The
+premium is real and so is the tail, which is precisely why it pays. Caveat: the
+headline is optimistic — options are priced synthetically off VIX with a modelled
+spread, not a real historical option chain.
+
 ## What it shows (and where it breaks)
 
 - **Momentum.** Decays under costs; suffers sharp reversals ("momentum crashes")
@@ -128,8 +175,13 @@ once you pay to cross it.
 - **Pairs.** Cointegration that holds in-sample often weakens out-of-sample;
   gating on it is what separates a real relationship from a spurious one. In
   liquid ETFs most of the relative-value edge appears arbitraged away.
-- **Both.** The value isn't a magic Sharpe — it's that the measurement is honest:
-  net of costs, free of look-ahead, and sized against capacity.
+- **Short volatility.** The only genuine premium of the three — because it is
+  *compensation for tail risk*, not a crowded anomaly. The delta-hedge isolates
+  the variance premium; the steep negative skew and kurtosis are the price of the
+  Sharpe, and reporting them honestly matters more than the Sharpe itself.
+- **All three.** The value isn't a magic number — it's that the measurement is
+  honest: net of costs, free of look-ahead, sized against capacity, and explicit
+  about the tail.
 
 ## Limitations
 
@@ -139,14 +191,17 @@ once you pay to cross it.
 - Survivorship bias in the momentum universe (disclosed, not corrected).
 - A priori pairs to sidestep multiple-testing; a broad cointegration screen would
   need a correction.
+- The short-vol straddle prices options synthetically off VIX (no historical
+  option chain), so its headline overstates a live implementation that pays the
+  real option bid-ask.
 
 ## Layout
 
 ```
-src/quantbt/      data, metrics, costs, backtest engine, plotting, strategies/
-scripts/          run_momentum.py, run_pairs.py
-notebooks/        narrative walkthroughs (momentum, pairs)
-tests/            27 unit tests (metrics, costs, engine, strategies)
+src/quantbt/      data, metrics, costs, backtest engine, plotting, blackscholes, strategies/
+scripts/          run_momentum.py, run_pairs.py, run_straddle.py
+notebooks/        narrative walkthroughs (momentum, pairs, short-vol)
+tests/            41 unit tests (metrics, costs, engine, strategies, black-scholes)
 data/             committed price/volume CSVs
 results/          committed metrics tables and tearsheets
 ```
