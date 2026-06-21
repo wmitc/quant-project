@@ -79,3 +79,28 @@ def load_dollar_adv(
     cache_file.parent.mkdir(parents=True, exist_ok=True)
     adv.to_csv(cache_file)
     return adv
+
+
+def load_ohlc(
+    ticker: str,
+    start: str,
+    end: str,
+    cache_file: str | Path,
+    force: bool = False,
+) -> pd.DataFrame:
+    """Return a daily Open/High/Low/Close frame for one ticker, cached to CSV.
+
+    Like `load_prices`, but keeps the full OHLC — some strategies need the open
+    as well as the close (e.g. the overnight effect).
+    """
+    cache_file = Path(cache_file)
+    if cache_file.exists() and not force:
+        return pd.read_csv(cache_file, index_col=0, parse_dates=True)
+
+    raw = yf.download(ticker, start=start, end=end, auto_adjust=True, progress=False)
+    if isinstance(raw.columns, pd.MultiIndex):  # single ticker can still come nested
+        raw.columns = raw.columns.get_level_values(0)
+    ohlc = raw[["Open", "High", "Low", "Close"]].sort_index().dropna()
+    cache_file.parent.mkdir(parents=True, exist_ok=True)
+    ohlc.to_csv(cache_file)
+    return ohlc
