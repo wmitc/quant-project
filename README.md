@@ -13,6 +13,18 @@ delta-hedged short straddle earns a genuine **variance risk premium** (Sharpe
 ~1.4–1.6 after costs) in exchange for a fat left tail. The framework makes all of
 that visible.
 
+## Results at a glance
+
+All figures are **after costs**. Methodology, cost-sensitivity sweeps, tail
+stats, and plots for each are in the [Results](#results) section below.
+
+| Strategy | Sharpe | Max DD | In a sentence |
+|---|---|---|---|
+| Cross-sectional momentum | 0.10 | −33% | Thin edge after costs in large-cap momentum |
+| ETF pairs (stat-arb) | 0.18 | −3.3% | Most candidate pairs aren't cointegrated out-of-sample |
+| Overnight effect (SPY) | ~0.5 | −29% | The index's drift is overwhelmingly an overnight phenomenon |
+| Delta-hedged short straddle | **1.4–1.6** | −13.5% | A real variance risk premium — paid for bearing a fat tail |
+
 ## Why
 
 It's easy to produce a backtest that looks great on gross returns and falls
